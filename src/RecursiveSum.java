@@ -3,20 +3,31 @@ import java.util.concurrent.RecursiveTask;
 
 class RecursiveSum extends RecursiveTask<Integer> {
     private final List<Integer> arr;
-    private final Integer size;
+    private final Integer start;
+    private final Integer end;
+    private final int PARTS = 2;
 
-    RecursiveSum(List<Integer> arr, Integer size) {
+    public RecursiveSum(Integer start, Integer end, List<Integer> arr) {
         this.arr = arr;
-        this.size = size;
+        this.start = start;
+        this.end = end;
     }
 
     @Override
     protected Integer compute() {
-        if (size == 0) {
-            return arr.get(size);
+        final int diff = end - start;
+        if (diff < PARTS) {
+            return arr.get(start);
+        } else {
+            return ForkJoinPoolArraySum();
         }
-        RecursiveSum previous = new RecursiveSum(arr, size - 1);
-        previous.fork();
-        return arr.get(size) + previous.join();
+    }
+
+    private Integer ForkJoinPoolArraySum() {
+        final int middle = (end - start) / 2 + start;
+        RecursiveSum task1 = new RecursiveSum(start, middle, arr);
+        RecursiveSum task2 = new RecursiveSum(middle, end, arr);
+        invokeAll(task1, task2);
+        return task1.join() + task2.join();
     }
 }
